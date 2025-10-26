@@ -3,17 +3,15 @@ name: Sync to Hugging Face Space
 on:
   push:
     branches:
-      - main  # Trigger on pushes to main branch
+      - main
 
 jobs:
   sync-to-hf-space:
     runs-on: ubuntu-latest
     steps:
-      # 1️⃣ Checkout GitHub repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Verify HF token exists (safe, no logging the secret)
       - name: Check HF token
         run: |
           if [ -z "$HF_TOKEN" ]; then
@@ -25,21 +23,17 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
-      # 3️⃣ Prepare files to push (optional: only required files)
       - name: Prepare files for HF Space
         run: |
           mkdir hf_push
           cp app.py hf_push/
           cp requirements.txt hf_push/
           cp potato_leaf_disease_cnn_model.keras hf_push/
-          # copy any other files you want to include
-        # This step ensures only relevant files are pushed, keeping your Space clean
 
-      # 4️⃣ Push to HF Space using official action
       - name: Push to Hugging Face Space
-        uses: huggingface/huggingface-hub-action@v1
+        uses: huggingface/hub-action@v2
         with:
           repo_type: space
           repo_id: Afzal-04/AgriLeafNet
-          path: hf_push    # Only push the prepared folder
+          path: hf_push
           token: ${{ secrets.HF_TOKEN }}
