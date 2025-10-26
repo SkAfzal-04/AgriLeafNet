@@ -3,15 +3,17 @@ name: Sync to Hugging Face Space
 on:
   push:
     branches:
-      - main
+      - main  # Trigger workflow on pushes to main
 
 jobs:
   sync-to-hf-space:
     runs-on: ubuntu-latest
     steps:
+      # 1️⃣ Checkout your GitHub repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 2️⃣ Verify HF token is set
       - name: Check HF token
         run: |
           if [ -z "$HF_TOKEN" ]; then
@@ -23,14 +25,8 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
-      - name: Prepare files for HF Space
-        run: |
-          mkdir hf_push
-          cp app.py hf_push/
-          cp requirements.txt hf_push/
-          cp potato_leaf_disease_cnn_model.keras hf_push/
-
-      - name: Push to Hugging Face Space
+      # 3️⃣ Push files to Hugging Face Space
+      - name: Push to HF Space
         uses: nateraw/huggingface-sync-action@v0.0.5
         with:
           github_repo_id: ${{ github.repository }}
