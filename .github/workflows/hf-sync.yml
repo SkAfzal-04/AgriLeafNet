@@ -24,6 +24,6 @@ jobs:
           git checkout -B main
           git add .
           git commit -m "Sync from GitHub" || echo "No changes to commit"
-          git push -u hf main --force --allow-unrelated-histories
+          git push -u hf main --force
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
