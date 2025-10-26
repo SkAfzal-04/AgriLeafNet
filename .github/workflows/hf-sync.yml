@@ -1,0 +1,26 @@
+name: Sync to Hugging Face Space
+
+on:
+  push:
+    branches:
+      - main   # or master, your default branch
+
+jobs:
+  sync-to-hf-space:
+    runs-on: ubuntu-latest
+    steps:
+      # 1️⃣ Checkout your GitHub repo
+      - name: Checkout GitHub repo
+        uses: actions/checkout@v4
+
+      # 2️⃣ Configure git and push to HF Space
+      - name: Push to Hugging Face Space
+        run: |
+          git config --global user.email "afzalking0001@example.com"
+          git config --global user.name "Afzal-04"
+          git remote add hf https://huggingface.co/spaces/Afzal-04/Agrileafnet
+          git fetch hf || echo "No remote yet"
+          git checkout -b main || git checkout main
+          git push -u hf main
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
