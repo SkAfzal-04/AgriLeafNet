@@ -3,17 +3,17 @@ name: Sync to Hugging Face Space
 on:
   push:
     branches:
-      - main  # Trigger workflow on pushes to main
+      - main  # Trigger on pushes to main branch
 
 jobs:
   sync-to-hf-space:
     runs-on: ubuntu-latest
     steps:
-      # 1️⃣ Checkout the GitHub repository
-      - name: Checkout repo
+      # 1️⃣ Checkout GitHub repo
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Verify HF token is set (safe, no logging of actual token)
+      # 2️⃣ Verify HF token exists (safe, no logging the secret)
       - name: Check HF token
         run: |
           if [ -z "$HF_TOKEN" ]; then
@@ -25,29 +25,21 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
-      # 3️⃣ Push repo to Hugging Face Space
-      - name: Push to HF Space
+      # 3️⃣ Prepare files to push (optional: only required files)
+      - name: Prepare files for HF Space
         run: |
-          git config --global user.email "afzalking0001@gmail.com"
-          git config --global user.name "Afzal-04"
+          mkdir hf_push
+          cp app.py hf_push/
+          cp requirements.txt hf_push/
+          cp potato_leaf_disease_cnn_model.keras hf_push/
+          # copy any other files you want to include
+        # This step ensures only relevant files are pushed, keeping your Space clean
 
-          # Remove remote if exists
-          git remote remove hf || echo "Remote removed"
-
-          # Add HF Space remote using token
-          git remote add hf https://$HF_TOKEN@huggingface.co/spaces/Afzal-04/AgriLeafNet
-
-          # Fetch remote to avoid branch errors
-          git fetch hf || echo "No remote branch yet"
-
-          # Switch/create main branch
-          git checkout -B main
-
-          # Add all files and commit if changes exist
-          git add .
-          git commit -m "Sync from GitHub" || echo "No changes to commit"
-
-          # Push forcefully to HF Space
-          git push -u hf main --force
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      # 4️⃣ Push to HF Space using official action
+      - name: Push to Hugging Face Space
+        uses: huggingface/huggingface-hub-action@v1
+        with:
+          repo_type: space
+          repo_id: Afzal-04/AgriLeafNet
+          path: hf_push    # Only push the prepared folder
+          token: ${{ secrets.HF_TOKEN }}
