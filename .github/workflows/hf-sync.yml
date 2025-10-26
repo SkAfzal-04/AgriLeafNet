@@ -48,7 +48,7 @@ jobs:
 
           # Initialize Git and connect to the existing HF Space
           git init
-          git remote add origin https://huggingface.co/spaces/Afzal-04/AgriLeafNet
+          git remote add origin https://$HF_TOKEN@huggingface.co/spaces/Afzal-04/AgriLeafNet
 
           # Add and commit changes
           git add .
