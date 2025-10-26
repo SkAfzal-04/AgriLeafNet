@@ -18,7 +18,7 @@ jobs:
           git config --global user.name "Afzal-04"
 
           git remote remove hf || echo "Remote removed"
-          git remote add hf https://$HF_TOKEN@huggingface.co/spaces/Afzal-04/Agrileafnet
+          git remote add hf https://$HF_TOKEN@huggingface.co/spaces/Afzal-04/AgriLeafNet
 
           git fetch hf || echo "No remote branch yet"
           git checkout -B main
