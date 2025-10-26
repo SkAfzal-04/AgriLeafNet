@@ -31,9 +31,9 @@ jobs:
           cp potato_leaf_disease_cnn_model.keras hf_push/
 
       - name: Push to Hugging Face Space
-        uses: huggingface/hub-action@v2
+        uses: nateraw/huggingface-sync-action@v0.0.5
         with:
+          github_repo_id: ${{ github.repository }}
+          huggingface_repo_id: Afzal-04/AgriLeafNet
           repo_type: space
-          repo_id: Afzal-04/AgriLeafNet
-          path: hf_push
-          token: ${{ secrets.HF_TOKEN }}
+          hf_token: ${{ secrets.HF_TOKEN }}
