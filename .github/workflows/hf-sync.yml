@@ -3,49 +3,53 @@ name: Sync to Hugging Face Space
 on:
   push:
     branches:
-      - main
+      - main  # Trigger workflow on pushes to main
 
 jobs:
   sync-to-hf-space:
     runs-on: ubuntu-latest
     steps:
-      # 1️⃣ Checkout repository
+      # 1️⃣ Checkout GitHub repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Python
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: 3.12
-
-      # 3️⃣ Install huggingface_hub
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install huggingface_hub==0.16.4
-
-      # 4️⃣ Verify HF token
+      # 2️⃣ Verify HF token is set
       - name: Check HF token
         run: |
           if [ -z "$HF_TOKEN" ]; then
-            echo "HF_TOKEN not set!"
+            echo "HF_TOKEN is not set!"
             exit 1
+          else
+            echo "HF_TOKEN is set ✅"
           fi
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
 
-      # 5️⃣ Sync files to existing Space
-      - name: Push to Hugging Face Space
+      # 3️⃣ Push files to Hugging Face Space
+      - name: Push to HF Space
         run: |
+          # Create a temporary folder to prepare files
           mkdir -p hf_sync
           cp app.py requirements.txt potato_leaf_disease_cnn_model.keras hf_sync/
           cd hf_sync
+
+          # Configure Git identity
+          git config --global user.email "afzalking0001@gmail.com"
+          git config --global user.name "Afzal-04"
+
+          # Login to Hugging Face
           huggingface-cli login --token $HF_TOKEN
+
+          # Initialize Git and connect to the existing HF Space
           git init
           git remote add origin https://huggingface.co/spaces/Afzal-04/AgriLeafNet
+
+          # Add and commit changes
           git add .
           git commit -m "Sync from GitHub"
+
+          # Set branch to main and push forcefully
+          git branch -M main
           git push -u origin main --force
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
