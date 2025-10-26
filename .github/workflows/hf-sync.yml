@@ -14,7 +14,7 @@ jobs:
 
       - name: Push to Hugging Face Space
         run: |
-          git config --global user.email "action@github.com"
+          git config --global user.email "afzalking0001@gmail.com"
           git config --global user.name "Afzal-04"
 
           git remote remove hf || echo "Remote removed"
