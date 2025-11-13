@@ -1,0 +1,6 @@
+tensorflow>=2.12.0
+keras>=2.12.0
+numpy>=1.24.0
+pillow>=10.0.0
+Flask>=2.3.2
+werkzeug>=2.3.8
