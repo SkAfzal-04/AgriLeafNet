@@ -1,7 +1,8 @@
 # ===========================================
 # 🥔 AGRILEAFNET - FLASK BACKEND (for React)
 # ===========================================
-
+import os
+os.system("pip install flask-cors==3.0.10")
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from keras.models import load_model
@@ -20,16 +21,9 @@ model = load_model(MODEL_PATH)
 
 # Define class labels
 classes = [
-    'Bacteria',
-    'Fungi',
-    'Healthy',
-    'Nematode',
-    'Pest',
-    'Phytopthora',
     'Potato___Early_blight',
     'Potato___Late_blight',
     'Potato___healthy',
-    'Virus'
 ]
 
 # Initialize Flask app
@@ -39,7 +33,9 @@ CORS(app)  # Allow frontend (React) access from localhost or HF space
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({"message": "✅ AgriLeafNet Flask Server is Running!"})
 # ===========================================
 # 🔍 PREDICT ROUTE
 # ===========================================
@@ -85,6 +81,7 @@ def view_image(filename):
     if os.path.exists(file_path):
         return send_file(file_path, mimetype='image/jpeg')
     return jsonify({"error": "Image not found"}), 404
+
 
 
 # ===========================================
