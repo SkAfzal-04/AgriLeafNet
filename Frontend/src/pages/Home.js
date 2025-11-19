@@ -195,7 +195,6 @@ export default function Home() {
             </h3>
             <p className="text-gray-700 text-center">Confidence: {result.type_conf}%</p>
 
-            <img src={file} className="mt-4 w-64 h-64 object-cover mx-auto rounded-xl shadow" />
 
             {/* Advice */}
             {advice && (
