@@ -27,108 +27,152 @@ export default function Home() {
 
     try {
       const res = await axios.post(
-        "https://Afzal-04-AgriLeafNet.hf.space/predict",
+        "https://afzal-04-agrileafnet.hf.space/predict",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
       setResult({
-        prediction: res.data.prediction,
-        confidence: res.data.confidence,
-        imageUrl: `https://Afzal-04-AgriLeafNet.hf.space/view_image/${file.name}`,
+        category: res.data.category_prediction,
+        category_conf: res.data.category_confidence,
+        type: res.data.disease_type_prediction,
+        type_conf: res.data.disease_type_confidence,
+        imageUrl: `https://afzal-04-agrileafnet.hf.space/view_image/${file.name}`,
       });
+
     } catch (err) {
       console.error(err);
-      alert("Prediction failed. Please check backend!");
+      alert("Prediction failed! Backend error.");
     } finally {
       setLoading(false);
     }
   };
 
-  // DISEASE-SPECIFIC MESSAGES
-  const getAdvice = (label) => {
-    switch (label) {
-      case "Potato___Late_blight":
-        return {
-          title: "Fertilizer Advice for Late Blight",
-          message:
-            "Late Blight is caused by *Phytophthora infestans*. Improve plant defense with Phosphite fertilizers and Calcium sprays.",
-          points: [
-            "Use Phosphorous Acid / Potassium Phosphite (K-Phite / Dimiphite). Helps activate plant immunity.",
-            "Apply Calcium Nitrate to strengthen plant cell walls.",
-            "Use foliar sprays, especially during cool & humid weather."
-          ]
-        };
+  // 🌿🔥 ADVICE SYSTEM (Combined Model 1 + Model 2)
+  const getCombinedAdvice = (category, type) => {
+    const baseAdvice = {
+      "Potato___Early_blight": {
+        title: "Early Blight Management",
+        message: "Early Blight weakens the plant and spreads fast in weak soil.",
+        sprays: [
+          "Mancozeb (Indofil M-45)",
+          "Chlorothalonil (Kavach)",
+          "Copper Oxychloride"
+        ],
+        fertilizers: [
+          "Balanced NPK (10:26:26 or 13:40:13)",
+          "Potassium (MOP)",
+          "Calcium Nitrate"
+        ]
+      },
 
-      case "Potato___Early_blight":
-        return {
-          title: "Fertilizer Advice for Early Blight",
-          message:
-            "Early Blight spreads faster in weak or nutrient-stressed plants. Maintain balanced NPK to keep foliage healthy.",
-          points: [
-            "Use controlled Nitrogen (Urea or CAN). Avoid excess nitrogen.",
-            "Apply Potassium (MOP) to improve stress resistance.",
-            "Maintain a regular NPK schedule to delay leaf aging."
-          ]
-        };
+      "Potato___Late_blight": {
+        title: "Late Blight Management",
+        message: "Late Blight is highly destructive and requires fast action.",
+        sprays: [
+          "Metalaxyl + Mancozeb (Ridomil Gold)",
+          "Potassium Phosphite",
+          "Cyazofamid / Dimethomorph"
+        ],
+        fertilizers: [
+          "Calcium Nitrate",
+          "Potassium-rich fertilizer",
+          "Phosphite-based immunity boosters"
+        ]
+      },
 
-      case "Potato___healthy":
-        return {
-          title: "Your Plant Looks Healthy! 🌱",
-          message:
-            "Great news! Your leaf appears healthy. Maintain a preventive care routine to keep diseases away.",
-          points: [
-            "Start a preventive spray: Mancozeb (Indofil M-45) or Chlorothalonil (Kavach).",
-            "Repeat every 7–10 days to protect new growth.",
-            "Ensure soil has enough Potassium, Zinc, and Boron."
-          ]
-        };
+      "Potato___healthy": {
+        title: "Healthy Leaf 🌱",
+        message: "Your plant looks healthy. Maintain preventive care.",
+        sprays: [
+          "Preventive Mancozeb spray",
+          "Neem oil (natural protection)"
+        ],
+        fertilizers: [
+          "Zinc + Boron mix",
+          "Steady organic compost",
+        ]
+      }
+    };
 
-      default:
-        return null;
-    }
+    const diseaseAdvice = {
+      "Bacteria": {
+        title: "Bacterial Infection Detected",
+        sprays: ["Copper Hydroxide", "Bordeaux Mixture"],
+        notes: "Avoid overhead irrigation."
+      },
+      "Fungi": {
+        title: "Fungal Infection Detected",
+        sprays: ["Hexaconazole", "Tebuconazole", "Carbendazim"],
+        notes: "Apply fungicides during dry hours."
+      },
+      "Nematode": {
+        title: "Nematode Infestation",
+        sprays: ["Neem cake", "Carbofuran (restricted use)", "Paecilomyces fungi"],
+        notes: "Use soil solarization."
+      },
+      "Pest": {
+        title: "Pest Damage Detected",
+        sprays: ["Imidacloprid", "Spinosad", "Neem oil"],
+        notes: "Check leaves for insects regularly."
+      },
+      "Phytopthora": {
+        title: "Phytophthora Detected",
+        sprays: ["Metalaxyl", "Phosphite spray"],
+        notes: "Improve drainage immediately."
+      },
+      "Virus": {
+        title: "Viral Infection Detected",
+        sprays: ["No cure – remove infected plants"],
+        notes: "Use resistant potato varieties."
+      },
+      "Healthy": {
+        title: "Looks Healthy",
+        sprays: ["Preventive neem spray"],
+        notes: "Maintain proper nutrition."
+      }
+    };
+
+    return { 
+      categoryAdvice: baseAdvice[category],
+      typeAdvice: diseaseAdvice[type]
+    };
   };
 
-  const advice = result ? getAdvice(result.prediction) : null;
+  const advice = result ? getCombinedAdvice(result.category, result.type) : null;
 
   return (
     <section className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-green-50 to-green-200 py-10">
       <div className="w-full max-w-3xl p-8 rounded-3xl bg-white/60 backdrop-blur-xl shadow-xl border border-white/40">
 
-        {/* TITLE */}
-        <h1 className="text-4xl md:text-5xl font-extrabold text-green-800 text-center drop-shadow-sm">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-green-800 text-center">
           AgriLeafNet 🌱
         </h1>
-        <p className="text-gray-700 text-center mt-3 text-sm md:text-base">
-          Upload a potato leaf image to detect Early Blight, Late Blight, or Healthy conditions.
+        <p className="text-gray-700 text-center mt-2">
+          Upload a potato leaf to detect disease category & infection type.
         </p>
 
-        {/* UPLOAD BOX */}
+        {/* Upload Box */}
         <label className="w-full mt-8 flex flex-col items-center justify-center border-2 border-dashed border-green-400 rounded-xl py-10 cursor-pointer hover:bg-green-50 transition">
           <Upload className="text-green-600 mb-3" size={42} />
-          <span className="text-gray-700 font-medium text-center">
-            Click to select a leaf image
-          </span>
+          <span className="text-gray-700 font-medium">Click to select a leaf image</span>
           <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
         </label>
 
-        {/* PREVIEW */}
+        {/* Preview */}
         {preview && (
           <div className="mt-6 text-center">
-            <img
-              src={preview}
-              alt="Preview"
-              className="w-56 h-56 object-cover mx-auto rounded-xl border shadow-md"
-            />
+            <img src={preview} alt="Preview"
+              className="w-56 h-56 object-cover mx-auto rounded-xl border shadow-md" />
           </div>
         )}
 
-        {/* BUTTON */}
+        {/* Button */}
         <button
           onClick={handleUpload}
           disabled={loading}
-          className={`w-full mt-5 py-3 rounded-xl font-semibold text-white text-lg flex justify-center items-center gap-2 transition-all duration-300
-            ${loading ? "bg-green-400 cursor-not-allowed" : "bg-green-600 hover:bg-green-700 shadow-md"}
+          className={`w-full mt-5 py-3 rounded-xl font-semibold text-white text-lg flex justify-center items-center gap-2
+            ${loading ? "bg-green-400" : "bg-green-600 hover:bg-green-700"}
           `}
         >
           {loading ? <Loader2 className="animate-spin" size={22} /> : "Analyze Leaf"}
@@ -136,34 +180,51 @@ export default function Home() {
 
         {/* RESULT CARD */}
         {result && (
-          <div className="mt-10 bg-green-100/70 border border-green-300 rounded-xl p-6 shadow-inner">
+          <div className="mt-10 bg-green-100/70 border border-green-300 rounded-xl p-6">
 
             <h3 className="text-2xl font-bold text-green-800 text-center">
-              {result.prediction.replace(/_/g, " ")}
+              {result.category.replace(/_/g, " ")}
             </h3>
-            <p className="text-green-700 font-medium text-center mb-4">
-              Confidence: {result.confidence}%
+            <p className="text-green-700 font-medium text-center">
+              Confidence: {result.category_conf}%
             </p>
 
-            <img
-              src={result.imageUrl}
-              alt="Processed Leaf"
-              className="mt-3 w-64 h-64 object-cover mx-auto rounded-xl border shadow-md"
-            />
+            <h3 className="text-xl font-bold text-green-700 text-center mt-4">
+              Disease Type: {result.type}
+            </h3>
+            <p className="text-gray-700 text-center">Confidence: {result.type_conf}%</p>
 
-            {/* ADVICE SECTION */}
+            <img src={result.imageUrl} className="mt-4 w-64 h-64 object-cover mx-auto rounded-xl shadow" />
+
+            {/* Advice */}
             {advice && (
-              <div className="mt-6 bg-white/80 p-4 rounded-xl border shadow-sm">
-                <h4 className="text-xl font-bold text-green-700 text-center">
-                  {advice.title}
-                </h4>
-                <p className="text-gray-700 mt-1 text-center">{advice.message}</p>
+              <div className="mt-6 bg-white p-4 rounded-xl border shadow">
 
-                <ul className="mt-3 space-y-1 text-gray-800 list-disc list-inside">
-                  {advice.points.map((p, idx) => (
-                    <li key={idx}>{p}</li>
-                  ))}
+                {/* Category Advice */}
+                <h4 className="text-xl font-bold text-green-700">{advice.categoryAdvice.title}</h4>
+                <p className="text-gray-700 mt-1">{advice.categoryAdvice.message}</p>
+
+                <h5 className="mt-2 font-semibold">Recommended Sprays:</h5>
+                <ul className="list-disc list-inside text-gray-800">
+                  {advice.categoryAdvice.sprays.map((p, i) => <li key={i}>{p}</li>)}
                 </ul>
+
+                <h5 className="mt-2 font-semibold">Fertilizers:</h5>
+                <ul className="list-disc list-inside text-gray-800">
+                  {advice.categoryAdvice.fertilizers.map((p, i) => <li key={i}>{p}</li>)}
+                </ul>
+
+                {/* Type advice */}
+                <hr className="my-4" />
+                <h4 className="text-xl font-bold text-green-700">{advice.typeAdvice.title}</h4>
+
+                <h5 className="mt-2 font-semibold">Sprays:</h5>
+                <ul className="list-disc list-inside text-gray-800">
+                  {advice.typeAdvice.sprays.map((p, i) => <li key={i}>{p}</li>)}
+                </ul>
+
+                <p className="mt-2 text-gray-700 italic">{advice.typeAdvice.notes}</p>
+
               </div>
             )}
 
