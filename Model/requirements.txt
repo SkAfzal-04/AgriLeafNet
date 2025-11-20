@@ -1,8 +1,26 @@
-flask-cors>=3.0.10
-tensorflow>=2.12.0
-keras>=2.12.0
-numpy>=1.24.0
-pillow>=10.0.0
-Flask>=2.3.2
-werkzeug>=2.3.8
+# --------------------------------------
+# Flask + CORS
+# --------------------------------------
+Flask==2.3.2
+flask-cors==3.0.10
+werkzeug==2.3.8
 
+# --------------------------------------
+# TensorFlow + Keras (LATEST - matches your training)
+# --------------------------------------
+tensorflow==2.17.0
+keras==3.3.3
+h5py==3.10.0
+numpy==1.26.4
+
+# --------------------------------------
+# PyTorch CPU
+# --------------------------------------
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.0.1+cpu
+torchvision==0.15.2+cpu
+
+# --------------------------------------
+# Image Processing
+# --------------------------------------
+pillow==10.2.0

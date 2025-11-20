@@ -1,116 +1,113 @@
-# app.py
 # ===========================================
-# 🥔 AGRILEAFNET - FLASK BACKEND (Fixed & Robust)
-# Two-Model Pipeline Edition
+# 🌿 AGRILEAFNET (Three-Model Pipeline)
+# PyTorch .pth + Keras models – HF-SAFE VERSION
 # ===========================================
+
 import os
-os.system("pip install flask-cors==3.0.10")
+
+# ========= FIX FOR PYTORCH RANDOM_DEVICE FAILURE =========
+# Must be defined BEFORE importing torch
+os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":16:8"
+os.environ["PYTHONHASHSEED"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""           # Force CPU
+os.environ["TORCH_USE_RTLD_GLOBAL"] = "YES"
+os.environ["MKL_SERVICE_FORCE_INTEL"] = "1"
+os.environ["FORCE_CPU"] = "1"
+os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
+# =========================================================
+
 import uuid
 import traceback
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
+
 from keras.models import load_model
 from keras.preprocessing import image
 import numpy as np
 
-# Optional: install dependency (kept here for HF Space where install on startup is needed)
-# os.system("pip install flask-cors==3.0.10")    # uncomment if required by your environment
 
-# ------------- CONFIG -------------
+  
+
+
+# ------------ CONFIG ------------
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg"}
-MAX_CONTENT_LENGTH = 6 * 1024 * 1024  # 6 MB upload limit
+MAX_CONTENT_LENGTH = 6 * 1024 * 1024  # 6 MB
 
-MODEL1_PATH = "disease_category_model.keras"   # model trained on 224x224
-MODEL2_PATH = "disease_type_model.keras"       # model trained on 256x256
+# CATEGORY + TYPE MODELS (Keras)
+CATEGORY_MODEL_PATH = "disease_category_model.keras"
+TYPE_MODEL_PATH = "disease_type_model.keras"
 
-# Default expected sizes (will be overridden by detecting model input shape if possible)
-MODEL1_SIZE = (224, 224)
-MODEL2_SIZE = (256, 256)
+CATEGORY_SIZE = (224, 224)
+TYPE_SIZE = (256, 256)
 
-# ------------- APP SETUP -------------
+
+# ------------ FLASK APP ------------
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
 
-# Allow cross-origin requests (you can restrict origins if needed)
 CORS(app, resources={
-    r"/*": {
-        "origins": [
-            "http://localhost:3000",
-            "https://agrileafnet.vercel.app"
-        ]
-    }
-}) # open CORS; change to CORS(app, resources={r"/*": {"origins": ["https://your-site"]}}) to lock down
+    r"/*": {"origins": [
+        "http://localhost:3000",
+        "https://agrileafnet.vercel.app"
+    ]}
+})
 
-# ------------- HELPERS -------------
-def allowed_file(filename: str) -> bool:
-    if "." not in filename:
-        return False
-    ext = filename.rsplit(".", 1)[1].lower()
-    return ext in ALLOWED_EXTENSIONS
+# ------------ HELPERS ------------
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def safe_save_file(file_storage):
-    """Save incoming file with a safe uuid filename and preserve extension."""
-    orig_name = secure_filename(file_storage.filename)
-    _, ext = os.path.splitext(orig_name)
-    if ext == "":
-        ext = ".jpg"
-    new_name = f"{uuid.uuid4().hex}{ext}"
-    path = os.path.join(app.config["UPLOAD_FOLDER"], new_name)
+    orig = secure_filename(file_storage.filename)
+    ext = os.path.splitext(orig)[1] or ".jpg"
+    new = f"{uuid.uuid4().hex}{ext}"
+    path = os.path.join(UPLOAD_FOLDER, new)
     file_storage.save(path)
-    return new_name, path
+    return new, path
 
-def preprocess_for_size(path, size):
-    """Load image, resize to 'size', normalize to [0,1], and expand dims."""
+
+def preprocess(path, size):
     img = image.load_img(path, target_size=size)
     arr = image.img_to_array(img) / 255.0
-    arr = np.expand_dims(arr, axis=0)
-    return arr
+    return np.expand_dims(arr, axis=0)
 
-# ------------- MODEL LOADING -------------
-model_category = None
-model_type = None
-model_load_errors = {}
 
-def try_load_model(path):
+# ------------ LOAD MODELS ------------
+def load_keras_model(path):
     try:
-        m = load_model(path)
-        return m, None
+        return load_model(path), None
     except Exception as e:
         return None, str(e)
+def load_leaf_model(filepath):
+    from leaf_model import predict_leaf_nonleaf
+    return predict_leaf_nonleaf(filepath)
 
-model_category, err = try_load_model(MODEL1_PATH)
-if err:
-    model_load_errors["model_category"] = err
-else:
-    # attempt to read model's input shape if available
-    try:
-        ishape = model_category.input_shape
-        if ishape and len(ishape) >= 3:
-            h, w = ishape[1], ishape[2]
-            if isinstance(h, int) and isinstance(w, int):
-                MODEL1_SIZE = (h, w)
-    except Exception:
-        pass
 
-model_type, err = try_load_model(MODEL2_PATH)
-if err:
-    model_load_errors["model_type"] = err
-else:
-    try:
-        ishape = model_type.input_shape
-        if ishape and len(ishape) >= 3:
-            h, w = ishape[1], ishape[2]
-            if isinstance(h, int) and isinstance(w, int):
-                MODEL2_SIZE = (h, w)
-    except Exception:
-        pass
+model_category, err_cat = load_keras_model(CATEGORY_MODEL_PATH)
+model_type, err_type = load_keras_model(TYPE_MODEL_PATH)
 
-# Model classes (keep in-sync with how models were trained)
+# AUTO-DETECT INPUT SIZES
+try:
+    s = model_category.input_shape
+    CATEGORY_SIZE = (s[1], s[2])
+except:
+    pass
+
+try:
+    s = model_type.input_shape
+    TYPE_SIZE = (s[1], s[2])
+except:
+    pass
+
+
+# ------------ CLASSES ------------
+LEAF_CLASSES = ["Leaf", "Non-Leaf"]
+
 CATEGORY_CLASSES = [
     "Potato___Early_blight",
     "Potato___Late_blight",
@@ -123,65 +120,77 @@ TYPE_CLASSES = [
     "Healthy",
     "Nematode",
     "Pest",
-    "Phytopthora",
+    "Phytophthora",
     "Virus"
 ]
 
-# ------------- ROUTES -------------
+
+# ------------ ROUTES ------------
+
 @app.route("/", methods=["GET"])
 def health():
-    """Health check: returns model load status and input sizes used."""
     return jsonify({
-        "status": "ok",
-        "model_category_loaded": model_category is not None,
-        "model_type_loaded": model_type is not None,
-        "model1_size": MODEL1_SIZE,
-        "model2_size": MODEL2_SIZE,
-        "model_load_errors": model_load_errors
+        "status": "running",
+        "models": {
+            "leaf_loaded": True,  # PyTorch model always loads
+            "category_loaded": model_category is not None,
+            "type_loaded": model_type is not None
+        },
+        "errors": {
+            "leaf": None,
+            "category": err_cat,
+            "type": err_type
+        },
+        "sizes": {
+            "category": CATEGORY_SIZE,
+            "type": TYPE_SIZE
+        }
     })
+
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    # Basic validations
     if "file" not in request.files:
-        return jsonify({"error": "No file part in request"}), 400
+        return jsonify({"error": "No file provided"}), 400
 
-    f = request.files["file"]
-    if f.filename == "":
-        return jsonify({"error": "No selected file"}), 400
+    file = request.files["file"]
 
-    if not allowed_file(f.filename):
-        return jsonify({"error": "File type not allowed"}), 400
+    if file.filename == "":
+        return jsonify({"error": "No file selected"}), 400
 
-    if (model_category is None) or (model_type is None):
-        return jsonify({"error": "Models not loaded on server", "model_load_errors": model_load_errors}), 503
+    if not allowed_file(file.filename):
+        return jsonify({"error": "Invalid file type"}), 400
 
-    # Save file safely
-    try:
-        filename, file_path = safe_save_file(f)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": "Failed to save file", "detail": str(e)}), 500
+    # SAVE FILE
+    filename, filepath = safe_save_file(file)
 
     try:
-        # Preprocess separately for the two models (different sizes)
-        img_for_cat = preprocess_for_size(file_path, MODEL1_SIZE)
-        img_for_type = preprocess_for_size(file_path, MODEL2_SIZE)
+        # --- STEP 1: LEAF / NON-LEAF (Pytorch model) ---
+        leaf_label = load_leaf_model(filepath)
 
-        # Predict using separate inputs
-        pred1 = model_category.predict(img_for_cat)
-        cat_idx = int(np.argmax(pred1, axis=1)[0])
-        cat_label = CATEGORY_CLASSES[cat_idx] if 0 <= cat_idx < len(CATEGORY_CLASSES) else "Unknown"
-        cat_conf = float(np.max(pred1)) * 100.0
-        cat_conf = round(cat_conf, 2)
+        if leaf_label == "non_leaf":
+            return jsonify({
+                "is_leaf": False,
+                "message": "Uploaded image is not a leaf.",
+                "filename": filename
+            }), 400
 
-        pred2 = model_type.predict(img_for_type)
-        type_idx = int(np.argmax(pred2, axis=1)[0])
-        type_label = TYPE_CLASSES[type_idx] if 0 <= type_idx < len(TYPE_CLASSES) else "Unknown"
-        type_conf = float(np.max(pred2)) * 100.0
-        type_conf = round(type_conf, 2)
+        # --- STEP 2: CATEGORY ---
+        cat_img = preprocess(filepath, CATEGORY_SIZE)
+        pred_cat = model_category.predict(cat_img)
+        cat_idx = int(np.argmax(pred_cat))
+        cat_label = CATEGORY_CLASSES[cat_idx]
+        cat_conf = round(float(np.max(pred_cat)) * 100, 2)
+
+        # --- STEP 3: TYPE ---
+        type_img = preprocess(filepath, TYPE_SIZE)
+        pred_type = model_type.predict(type_img)
+        type_idx = int(np.argmax(pred_type))
+        type_label = TYPE_CLASSES[type_idx]
+        type_conf = round(float(np.max(pred_type)) * 100, 2)
 
         return jsonify({
+            "is_leaf": True,
             "category_prediction": cat_label,
             "category_confidence": cat_conf,
             "disease_type_prediction": type_label,
@@ -190,24 +199,24 @@ def predict():
         })
 
     except Exception as e:
-        # print stack trace to logs (HF Spaces show logs)
         traceback.print_exc()
-        return jsonify({"error": "Prediction failed", "detail": str(e)}), 500
+        return jsonify({
+            "error": "Prediction failed",
+            "detail": str(e)
+        }), 500
 
-@app.route("/view_image/<filename>", methods=["GET"])
+
+@app.route("/view_image/<filename>")
 def view_image(filename):
-    # Prevent directory traversal
     safe_name = secure_filename(filename)
-    path = os.path.join(app.config["UPLOAD_FOLDER"], safe_name)
+    path = os.path.join(UPLOAD_FOLDER, safe_name)
     if os.path.exists(path):
         return send_file(path, mimetype="image/jpeg")
-    return jsonify({"error": "Image not found"}), 404
+    return jsonify({"error": "Not found"}), 404
 
-# ------------- RUN -------------
+
 if __name__ == "__main__":
-    # Debug prints for local run
-    print("Starting AgriLeafNet backend...")
-    print("Model load errors:", model_load_errors)
-    print("Model1 size (used):", MODEL1_SIZE)
-    print("Model2 size (used):", MODEL2_SIZE)
+    print("🚀 Starting AgriLeafNet Backend...")
+    print("Category model error:", err_cat)
+    print("Type model error:", err_type)
     app.run(host="0.0.0.0", port=7860, debug=True)

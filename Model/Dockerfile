@@ -1,24 +1,29 @@
-# ===========================================
-# DOCKERFILE FOR POTATO LEAF DISEASE DETECTION (FLASK)
-# ===========================================
-
-# Use official Python slim image
 FROM python:3.10-slim
 
-# Set working directory
+# --- Fix random_device BEFORE Python starts ---
+ENV PYTHONHASHSEED=0
+ENV CUBLAS_WORKSPACE_CONFIG=:16:8
+ENV MKL_SERVICE_FORCE_INTEL=1
+ENV CUDA_VISIBLE_DEVICES=""
+ENV USE_RANDOM_DEVICE=0
+ENV FORCE_CPU=1
+ENV PYTORCH_ENABLE_MPS_FALLBACK=1
+
 WORKDIR /app
 
-# Copy all files into the container
 COPY . /app
 
-# Upgrade pip
-RUN pip install --no-cache-dir --upgrade pip
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libglib2.0-0 \
+    libgl1 \
+    libjpeg62-turbo \
+    libpng16-16 \
+    libopenblas-dev \
+    libomp-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install dependencies
-RUN pip install --no-cache-dir flask tensorflow keras numpy pillow werkzeug
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the port that HF Spaces expects
 EXPOSE 7860
-
-# Command to run the Flask app
 CMD ["python", "app.py"]
