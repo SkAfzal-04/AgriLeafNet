@@ -64,13 +64,27 @@ export default function Home() {
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
+
       console.log(res.data);
+
+      // 🛑 --- CASE 1: NOT A LEAF ---
+      if (res.data.is_leaf === false) {
+        setResult({
+          is_leaf: false,
+          message: res.data.message,
+          imageUrl: `https://afzal-04-agrileafnet.hf.space/view_image/${res.data.filename}`,
+        });
+        return;       // stop here, do NOT process category/type
+      }
+
+      // 🟢 --- CASE 2: LEAF (normal disease results) ---
       setResult({
+        is_leaf: true,
         category: res.data.category_prediction,
         category_conf: res.data.category_confidence,
         type: res.data.disease_type_prediction,
         type_conf: res.data.disease_type_confidence,
-        imageUrl: `https://afzal-04-agrileafnet.hf.space/view_image/${file.name}`,
+        imageUrl: `https://afzal-04-agrileafnet.hf.space/view_image/${res.data.filename}`,
       });
 
     } catch (err) {
@@ -80,6 +94,7 @@ export default function Home() {
       setLoading(false);
     }
   };
+
 
   // 🔥 Bengali names + descriptions
   const diseaseNamesBN = {
@@ -142,48 +157,48 @@ export default function Home() {
     };
 
     const typeAdvice = {
-  "Bacteria": {
-    en: { title: "Bacterial Infection Detected", notes: "Avoid overhead irrigation." },
-    bn: { title: "ব্যাকটেরিয়া সংক্রমণ", notes: "গাছের উপর দিয়ে পানি দেওয়া এড়িয়ে চলুন।" },
-    sprays: ["Copper Hydroxide", "Bordeaux Mixture"]
-  },
+      "Bacteria": {
+        en: { title: "Bacterial Infection Detected", notes: "Avoid overhead irrigation." },
+        bn: { title: "ব্যাকটেরিয়া সংক্রমণ", notes: "গাছের উপর দিয়ে পানি দেওয়া এড়িয়ে চলুন।" },
+        sprays: ["Copper Hydroxide", "Bordeaux Mixture"]
+      },
 
-  "Fungi": {
-    en: { title: "Fungal Infection Detected", notes: "Apply fungicides in dry hours." },
-    bn: { title: "ছত্রাক সংক্রমণ", notes: "শুকনো আবহাওয়ায় স্প্রে করুন।" },
-    sprays: ["Hexaconazole", "Tebuconazole"]
-  },
+      "Fungi": {
+        en: { title: "Fungal Infection Detected", notes: "Apply fungicides in dry hours." },
+        bn: { title: "ছত্রাক সংক্রমণ", notes: "শুকনো আবহাওয়ায় স্প্রে করুন।" },
+        sprays: ["Hexaconazole", "Tebuconazole"]
+      },
 
-  "Virus": {
-    en: { title: "Viral Infection", notes: "No cure—remove infected plants." },
-    bn: { title: "ভাইরাস সংক্রমণ", notes: "এর কোনো চিকিৎসা নেই—সংক্রমিত গাছ তুলে ফেলুন।" },
-    sprays: []
-  },
+      "Virus": {
+        en: { title: "Viral Infection", notes: "No cure—remove infected plants." },
+        bn: { title: "ভাইরাস সংক্রমণ", notes: "এর কোনো চিকিৎসা নেই—সংক্রমিত গাছ তুলে ফেলুন।" },
+        sprays: []
+      },
 
-  "Phytopthora": {
-    en: { title: "Phytophthora Infection", notes: "Apply systemic fungicides early." },
-    bn: { title: "ফাইটোফথোরা সংক্রমণ", notes: "শুরুর দিকেই সিস্টেমিক ফাংগিসাইড ব্যবহার করুন।" },
-    sprays: ["Metalaxyl", "Fosetyl-Al"]
-  },
+      "Phytophthora": {
+        en: { title: "Phytophthora Infection", notes: "Apply systemic fungicides early." },
+        bn: { title: "ফাইটোফথোরা সংক্রমণ", notes: "শুরুর দিকেই সিস্টেমিক ফাংগিসাইড ব্যবহার করুন।" },
+        sprays: ["Metalaxyl", "Fosetyl-Al"]
+      },
 
-  "Pest": {
-    en: { title: "Pest Attack Detected", notes: "Control pests using safe insecticides." },
-    bn: { title: "পোকার আক্রমণ", notes: "নিরাপদ কীটনাশক ব্যবহার করুন।" },
-    sprays: ["Lambda Cyhalothrin", "Imidacloprid"]
-  },
+      "Pest": {
+        en: { title: "Pest Attack Detected", notes: "Control pests using safe insecticides." },
+        bn: { title: "পোকার আক্রমণ", notes: "নিরাপদ কীটনাশক ব্যবহার করুন।" },
+        sprays: ["Lambda Cyhalothrin", "Imidacloprid"]
+      },
 
-  "Nematode": {
-    en: { title: "Nematode Infection", notes: "Soil treatment recommended." },
-    bn: { title: "নেমাটোড সংক্রমণ", notes: "মাটির চিকিৎসা অত্যন্ত জরুরি।" },
-    sprays: ["Carbofuran", "Phorate"]
-  },
+      "Nematode": {
+        en: { title: "Nematode Infection", notes: "Soil treatment recommended." },
+        bn: { title: "নেমাটোড সংক্রমণ", notes: "মাটির চিকিৎসা অত্যন্ত জরুরি।" },
+        sprays: ["Carbofuran", "Phorate"]
+      },
 
-  "Healthy": {
-    en: { title: "Healthy Type", notes: "No infection detected." },
-    bn: { title: "সুস্থ", notes: "কোনো সংক্রমণ নেই।" },
-    sprays: []
-  }
-};
+      "Healthy": {
+        en: { title: "Healthy Type", notes: "No infection detected." },
+        bn: { title: "সুস্থ", notes: "কোনো সংক্রমণ নেই।" },
+        sprays: []
+      }
+    };
 
     return {
       categoryAdvice: baseAdvice[category],
@@ -237,8 +252,21 @@ export default function Home() {
           {loading ? <Loader2 className="animate-spin" size={22} /> : uiText[lang].analyze}
         </button>
 
+        {result && !result.is_leaf && (
+          <div className="mt-10 bg-red-100 border border-red-300 rounded-xl p-6 text-center">
+            <h3 className="text-2xl font-bold text-red-700">
+              {lang === "en" ? "Not a Leaf!" : "পাতা নয়!"}
+            </h3>
+            <p className="text-gray-800 mt-2">
+              {lang === "en" ? result.message : "আপলোড করা ছবিটি পাতার নয়।"}
+            </p>
+            <img src={result.imageUrl} className="w-56 h-56 object-cover mx-auto rounded-xl mt-4 shadow-md" />
+          </div>
+        )}
+
+
         {/* RESULT CARD */}
-        {result && (
+        {result && result.is_leaf &&  (
           <div className="mt-10 bg-green-100/70 border border-green-300 rounded-xl p-6">
 
             <h3 className="text-2xl font-bold text-green-800 text-center">
