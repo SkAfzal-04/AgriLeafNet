@@ -1,336 +1,301 @@
 import { useState } from "react";
 import axios from "axios";
 import { Loader2, Upload } from "lucide-react";
+import { API_URL } from "../utils/constants";
 
 export default function Home() {
+
+  // =========================
+  // STATE
+  // =========================
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
+
   const [result, setResult] = useState(null);
+
+  const [medicinesData, setMedicinesData] = useState(null);
+  const [medLoading, setMedLoading] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
-  // 🌍 Language State
   const [lang, setLang] = useState("en");
 
-  const toggleLanguage = () => setLang(lang === "en" ? "bn" : "en");
-
+  // =========================
+  // 🌍 UI TEXT (5 LANGUAGES)
+  // =========================
   const uiText = {
     en: {
       title: "AgriLeafNet 🌱",
-      subtitle: "Upload a potato leaf to detect disease category & infection type.",
-      select: "Click to select a leaf image",
+      subtitle: "Upload a leaf image to detect disease.",
       analyze: "Analyze Leaf",
-      category: "Category",
+      select: "Click to select image",
       confidence: "Confidence",
       diseaseType: "Disease Type",
-      sprays: "Recommended Sprays:",
-      fertilizers: "Fertilizers:",
-      sprays2: "Sprays:",
-      toggle: "Switch to Bengali"
+      medicines: "AI Recommended Medicines",
+      loadingMed: "Fetching medicines...",
+      noMed: "No medicines found"
     },
+
     bn: {
       title: "AgriLeafNet 🌱",
-      subtitle: "আলুর পাতার ছবি আপলোড করুন রোগ শনাক্ত করতে।",
-      select: "পাতার ছবি নির্বাচন করতে ক্লিক করুন",
+      subtitle: "পাতার ছবি আপলোড করুন রোগ শনাক্ত করতে।",
       analyze: "পাতা বিশ্লেষণ করুন",
-      category: "শ্রেণী",
+      select: "ছবি নির্বাচন করুন",
       confidence: "নিশ্চয়তা",
       diseaseType: "রোগের ধরন",
-      sprays: "প্রস্তাবিত স্প্রে:",
-      fertilizers: "সার:",
-      sprays2: "স্প্রে:",
-      toggle: "Switch to English"
+      medicines: "AI ওষুধ",
+      loadingMed: "ওষুধ আনা হচ্ছে...",
+      noMed: "কোনো ওষুধ পাওয়া যায়নি"
+    },
+
+    hi: {
+      title: "AgriLeafNet 🌱",
+      subtitle: "पत्ती की तस्वीर अपलोड करें।",
+      analyze: "पत्ती विश्लेषण करें",
+      select: "छवि चुनें",
+      confidence: "विश्वास",
+      diseaseType: "रोग प्रकार",
+      medicines: "AI दवाएं",
+      loadingMed: "दवाएं लोड हो रही हैं...",
+      noMed: "कोई दवा नहीं मिली"
+    },
+
+    ta: {
+      title: "AgriLeafNet 🌱",
+      subtitle: "இலை படத்தை பதிவேற்றவும்.",
+      analyze: "இலையை பகுப்பாய்வு செய்யவும்",
+      select: "படத்தை தேர்வு செய்யவும்",
+      confidence: "நம்பிக்கை",
+      diseaseType: "நோய் வகை",
+      medicines: "AI மருந்துகள்",
+      loadingMed: "மருந்துகள் ஏற்றப்படுகிறது...",
+      noMed: "மருந்துகள் இல்லை"
+    },
+
+    te: {
+      title: "AgriLeafNet 🌱",
+      subtitle: "ఆకు చిత్రాన్ని అప్లోడ్ చేయండి.",
+      analyze: "ఆకు విశ్లేషించండి",
+      select: "చిత్రాన్ని ఎంచుకోండి",
+      confidence: "నమ్మకం",
+      diseaseType: "రోగ రకం",
+      medicines: "AI మందులు",
+      loadingMed: "మందులు లోడ్ అవుతున్నాయి...",
+      noMed: "మందులు లభించలేదు"
     }
   };
 
+  // =========================
+  // FILE SELECT
+  // =========================
   const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
-    setFile(selectedFile);
-    setPreview(selectedFile ? URL.createObjectURL(selectedFile) : null);
+    const f = e.target.files[0];
+    setFile(f);
+    setPreview(f ? URL.createObjectURL(f) : null);
+
     setResult(null);
+    setMedicinesData(null);
   };
 
+  // =========================
+  // FETCH MEDICINES (BACKGROUND)
+  // =========================
+  const fetchMedicines = async (disease) => {
+    try {
+      setMedLoading(true);
+
+      const res = await axios.get(`${API_URL}/medicines`, {
+        params: {
+          disease,
+          lang   // ✅ send language to backend
+        }
+      });
+      console.log(res)
+
+      setMedicinesData(res.data);
+
+    } catch (err) {
+      console.error("Medicine error:", err);
+    } finally {
+      setMedLoading(false);
+    }
+  };
+
+  // =========================
+  // UPLOAD
+  // =========================
   const handleUpload = async () => {
-    if (!file) return alert("Please upload an image first!");
+    if (!file) return alert("Upload image first");
 
     setLoading(true);
     setResult(null);
+    setMedicinesData(null);
 
     const formData = new FormData();
     formData.append("file", file);
 
     try {
+      // 🔥 FAST RESPONSE
       const res = await axios.post(
-        "https://afzal-04-agrileafnet.hf.space/predict",
+        `${API_URL}/predict`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
 
-      console.log(res.data);
+      const data = res.data;
 
-      // 🛑 --- CASE 1: NOT A LEAF ---
-      if (res.data.is_leaf === false) {
+      if (!data.is_leaf) {
         setResult({
           is_leaf: false,
-          message: res.data.message,
-          imageUrl: `https://afzal-04-agrileafnet.hf.space/view_image/${res.data.filename}`,
+          message: data.message,
+          imageUrl: `${API_URL}/view_image/${data.filename}`
         });
-        return;       // stop here, do NOT process category/type
+        return;
       }
 
-      // 🟢 --- CASE 2: LEAF (normal disease results) ---
+      const disease = data.disease_name;
+
+      // ✅ SHOW RESULT FAST
       setResult({
         is_leaf: true,
-        category: res.data.category_prediction,
-        category_conf: res.data.category_confidence,
-        type: res.data.disease_type_prediction,
-        type_conf: res.data.disease_type_confidence,
-        imageUrl: `https://afzal-04-agrileafnet.hf.space/view_image/${res.data.filename}`,
+        category: data.category_prediction,
+        category_conf: data.category_confidence,
+        type: data.disease_type_prediction,
+        type_conf: data.disease_type_confidence,
+        disease_name: disease,
+        imageUrl: `${API_URL}/view_image/${data.filename}`
       });
+
+      // 🚀 BACKGROUND AI CALL
+      fetchMedicines(disease);
 
     } catch (err) {
       console.error(err);
-      alert("Prediction failed! Backend error.");
+      alert("Prediction failed");
     } finally {
       setLoading(false);
     }
   };
 
-
-  // 🔥 Bengali names + descriptions
-  const diseaseNamesBN = {
-    "Potato___Early_blight": "আর্লি ব্লাইট (আগাম ধ্বসা)",
-    "Potato___Late_blight": "লেইট ব্লাইট (নাবী ধ্বসা)",
-    "Potato___healthy": "সুস্থ পাতা",
-  };
-
-  const typeNamesBN = {
-    "Bacteria": "ব্যাকটেরিয়া সংক্রমণ",
-    "Fungi": "ছত্রাক সংক্রমণ",
-    "Healthy": "সুস্থ",
-    "Nematode": "নেমাটোড আক্রান্ত",
-    "Pest": "পোকার আক্রমণ",
-    "Phytopthora": "ফাইটোফথোরা",
-    "Virus": "ভাইরাস সংক্রমণ",
-  };
-
-  // 🌿 Advice System
-  const getCombinedAdvice = (category, type) => {
-    const baseAdvice = {
-      "Potato___Early_blight": {
-        en: {
-          title: "Early Blight Management",
-          message: "Early Blight weakens the plant and spreads fast.",
-        },
-        bn: {
-          title: "আগাম ধ্বসা ব্যবস্থাপনা",
-          message: "আগাম ধ্বসা গাছকে দুর্বল করে এবং দ্রুত ছড়ায়।",
-        },
-        sprays: ["Mancozeb", "Chlorothalonil", "Copper Oxychloride"],
-        fertilizers: ["NPK", "Potassium", "Calcium Nitrate"]
-      },
-
-      "Potato___Late_blight": {
-        en: {
-          title: "Late Blight Management",
-          message: "Highly destructive! Immediate action required.",
-        },
-        bn: {
-          title: "নাবী ধ্বসা ব্যবস্থাপনা",
-          message: "অত্যন্ত বিধ্বংসী! দ্রুত ব্যবস্থা নেওয়া জরুরি।",
-        },
-        sprays: ["Ridomil Gold", "Potassium Phosphite", "Cyazofamid"],
-        fertilizers: ["Calcium Nitrate", "Potassium", "Immunity boosters"]
-      },
-
-      "Potato___healthy": {
-        en: {
-          title: "Healthy Leaf 🌱",
-          message: "Your plant looks healthy.",
-        },
-        bn: {
-          title: "সুস্থ পাতা 🌱",
-          message: "আপনার গাছ সুস্থ রয়েছে।",
-        },
-        sprays: ["Neem oil", "Preventive Mancozeb"],
-        fertilizers: ["Organic compost", "Zinc + Boron"]
-      }
-    };
-
-    const typeAdvice = {
-      "Bacteria": {
-        en: { title: "Bacterial Infection Detected", notes: "Avoid overhead irrigation." },
-        bn: { title: "ব্যাকটেরিয়া সংক্রমণ", notes: "গাছের উপর দিয়ে পানি দেওয়া এড়িয়ে চলুন।" },
-        sprays: ["Copper Hydroxide", "Bordeaux Mixture"]
-      },
-
-      "Fungi": {
-        en: { title: "Fungal Infection Detected", notes: "Apply fungicides in dry hours." },
-        bn: { title: "ছত্রাক সংক্রমণ", notes: "শুকনো আবহাওয়ায় স্প্রে করুন।" },
-        sprays: ["Hexaconazole", "Tebuconazole"]
-      },
-
-      "Virus": {
-        en: { title: "Viral Infection", notes: "No cure—remove infected plants." },
-        bn: { title: "ভাইরাস সংক্রমণ", notes: "এর কোনো চিকিৎসা নেই—সংক্রমিত গাছ তুলে ফেলুন।" },
-        sprays: []
-      },
-
-      "Phytophthora": {
-        en: { title: "Phytophthora Infection", notes: "Apply systemic fungicides early." },
-        bn: { title: "ফাইটোফথোরা সংক্রমণ", notes: "শুরুর দিকেই সিস্টেমিক ফাংগিসাইড ব্যবহার করুন।" },
-        sprays: ["Metalaxyl", "Fosetyl-Al"]
-      },
-
-      "Pest": {
-        en: { title: "Pest Attack Detected", notes: "Control pests using safe insecticides." },
-        bn: { title: "পোকার আক্রমণ", notes: "নিরাপদ কীটনাশক ব্যবহার করুন।" },
-        sprays: ["Lambda Cyhalothrin", "Imidacloprid"]
-      },
-
-      "Nematode": {
-        en: { title: "Nematode Infection", notes: "Soil treatment recommended." },
-        bn: { title: "নেমাটোড সংক্রমণ", notes: "মাটির চিকিৎসা অত্যন্ত জরুরি।" },
-        sprays: ["Carbofuran", "Phorate"]
-      },
-
-      "Healthy": {
-        en: { title: "Healthy Type", notes: "No infection detected." },
-        bn: { title: "সুস্থ", notes: "কোনো সংক্রমণ নেই।" },
-        sprays: []
-      }
-    };
-
-    return {
-      categoryAdvice: baseAdvice[category],
-      typeAdvice: typeAdvice[type],
-    };
-  };
-
-  const advice = result ? getCombinedAdvice(result.category, result.type) : null;
-
+  // =========================
+  // UI
+  // =========================
   return (
-    <section className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-green-50 to-green-200 py-10">
-      <div className="w-full max-w-3xl p-8 rounded-3xl bg-white/60 backdrop-blur-xl shadow-xl border border-white/40">
+    <section className="min-h-screen flex justify-center items-center bg-green-50 p-6">
+      <div className="w-full max-w-3xl bg-white p-6 rounded-2xl shadow">
 
-        {/* 🌍 Language Toggle*/}
-        <button
-          onClick={toggleLanguage}
-          className="mb-4 bg-green-700 hover:bg-green-800 text-white px-4 py-2 rounded-xl"
+        {/* 🌍 LANGUAGE SELECT */}
+        <select
+          value={lang}
+          onChange={(e) => setLang(e.target.value)}
+          className="mb-4 p-2 border rounded"
         >
-          {uiText[lang].toggle}
-        </button>
+          <option value="en">English</option>
+          <option value="bn">Bengali</option>
+          <option value="hi">Hindi</option>
+          <option value="ta">Tamil</option>
+          <option value="te">Telugu</option>
+        </select>
 
-        <h1 className="text-4xl md:text-5xl font-extrabold text-green-800 text-center">
+        <h1 className="text-3xl font-bold text-green-800 text-center">
           {uiText[lang].title}
         </h1>
-        <p className="text-gray-700 text-center mt-2">
+
+        <p className="text-center text-gray-600 mt-2">
           {uiText[lang].subtitle}
         </p>
 
-        {/* Upload Box */}
-        <label className="w-full mt-8 flex flex-col items-center justify-center border-2 border-dashed border-green-400 rounded-xl py-10 cursor-pointer hover:bg-green-50 transition">
-          <Upload className="text-green-600 mb-3" size={42} />
-          <span className="text-gray-700 font-medium">{uiText[lang].select}</span>
-          <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+        {/* Upload */}
+        <label className="mt-6 flex flex-col items-center border-2 border-dashed p-6 cursor-pointer">
+          <Upload />
+          <span>{uiText[lang].select}</span>
+          <input type="file" hidden onChange={handleFileChange} />
         </label>
 
         {/* Preview */}
         {preview && (
-          <div className="mt-6 text-center">
-            <img src={preview} className="w-56 h-56 object-cover mx-auto rounded-xl border shadow-md" />
-          </div>
+          <img src={preview} className="w-48 mx-auto mt-4 rounded" />
         )}
 
-        {/* Analyze Button */}
+        {/* Button */}
         <button
           onClick={handleUpload}
           disabled={loading}
-          className={`w-full mt-5 py-3 rounded-xl font-semibold text-white text-lg flex justify-center items-center gap-2
-            ${loading ? "bg-green-400" : "bg-green-600 hover:bg-green-700"}
-          `}
+          className="w-full mt-4 bg-green-600 text-white py-2 rounded"
         >
-          {loading ? <Loader2 className="animate-spin" size={22} /> : uiText[lang].analyze}
+          {loading ? <Loader2 className="animate-spin mx-auto" /> : uiText[lang].analyze}
         </button>
 
-        {result && !result.is_leaf && (
-          <div className="mt-10 bg-red-100 border border-red-300 rounded-xl p-6 text-center">
-            <h3 className="text-2xl font-bold text-red-700">
-              {lang === "en" ? "Not a Leaf!" : "পাতা নয়!"}
-            </h3>
-            <p className="text-gray-800 mt-2">
-              {lang === "en" ? result.message : "আপলোড করা ছবিটি পাতার নয়।"}
-            </p>
-            <img src={result.imageUrl} className="w-56 h-56 object-cover mx-auto rounded-xl mt-4 shadow-md" />
-          </div>
-        )}
+        {/* RESULT */}
+        {result && result.is_leaf && (
+          <div className="mt-6 p-4 bg-green-100 rounded">
 
+            <h2 className="text-xl font-bold text-center">
+              {result.category.replace(/_/g, " ")}
+            </h2>
 
-        {/* RESULT CARD */}
-        {result && result.is_leaf &&  (
-          <div className="mt-10 bg-green-100/70 border border-green-300 rounded-xl p-6">
-
-            <h3 className="text-2xl font-bold text-green-800 text-center">
-              {lang === "en"
-                ? result.category.replace(/_/g, " ")
-                : diseaseNamesBN[result.category]}
-            </h3>
-
-            <p className="text-green-700 font-medium text-center">
+            <p className="text-center">
               {uiText[lang].confidence}: {result.category_conf}%
             </p>
 
-            <h3 className="text-xl font-bold text-green-700 text-center mt-4">
-              {uiText[lang].diseaseType}:{" "}
-              {lang === "en" ? result.type : typeNamesBN[result.type]}
-            </h3>
-
-            <p className="text-gray-700 text-center">
-              {uiText[lang].confidence}: {result.type_conf}%
+            <p className="text-center mt-2">
+              {uiText[lang].diseaseType}: {result.type}
             </p>
 
-            {/* Advice */}
-            {advice && (
-              <div className="mt-6 bg-white p-4 rounded-xl border shadow">
+            {/* 💊 MEDICINES */}
+            <div className="mt-6 bg-white p-4 rounded shadow">
 
-                {/* Category Advice */}
-                <h4 className="text-xl font-bold text-green-700">
-                  {advice.categoryAdvice[lang].title}
-                </h4>
-                <p className="text-gray-700 mt-1">
-                  {advice.categoryAdvice[lang].message}
+              <h3 className="font-bold text-green-700">
+                {uiText[lang].medicines}
+              </h3>
+
+              {medLoading && (
+                <p className="flex gap-2 text-gray-600">
+                  <Loader2 className="animate-spin" size={16} />
+                  {uiText[lang].loadingMed}
                 </p>
+              )}
 
-                <h5 className="mt-2 font-semibold">{uiText[lang].sprays}</h5>
-                <ul className="list-disc list-inside text-gray-800">
-                  {advice.categoryAdvice.sprays.map((p, i) => <li key={i}>{p}</li>)}
+              {medicinesData && medicinesData.medicines?.length > 0 && (
+                <ul className="mt-3 space-y-2">
+                  {medicinesData.medicines.map((m, i) => (
+                    <li key={i} className="border p-2 rounded">
+
+                      <p className="font-semibold">{m.medicine}</p>
+                      <p className="text-sm text-gray-600">{m.usage}</p>
+
+                      {m.link && (
+                        <a
+                          href={m.link}
+                          target="_blank"
+                          className="text-blue-600 text-sm"
+                        >
+                          View Product
+                        </a>
+                      )}
+
+                    </li>
+                  ))}
                 </ul>
+              )}
 
-                <h5 className="mt-2 font-semibold">{uiText[lang].fertilizers}</h5>
-                <ul className="list-disc list-inside text-gray-800">
-                  {advice.categoryAdvice.fertilizers.map((p, i) => <li key={i}>{p}</li>)}
-                </ul>
-
-                <hr className="my-4" />
-
-                {/* Type advice */}
-                <h4 className="text-xl font-bold text-green-700">
-                  {advice.typeAdvice[lang].title}
-                </h4>
-
-                <h5 className="mt-2 font-semibold">{uiText[lang].sprays2}</h5>
-                <ul className="list-disc list-inside text-gray-800">
-                  {advice.typeAdvice.sprays.map((p, i) => <li key={i}>{p}</li>)}
-                </ul>
-
-                <p className="mt-2 text-gray-700 italic">
-                  {advice.typeAdvice[lang].notes}
+              {medicinesData && medicinesData.medicines?.length === 0 && (
+                <p className="text-gray-500 mt-2">
+                  {uiText[lang].noMed}
                 </p>
+              )}
 
-              </div>
-            )}
-
+            </div>
           </div>
         )}
+
+        {/* NOT LEAF */}
+        {result && !result.is_leaf && (
+          <div className="mt-6 text-red-600 text-center">
+            {result.message}
+          </div>
+        )}
+
       </div>
     </section>
   );

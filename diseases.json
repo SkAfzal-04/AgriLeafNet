@@ -1,0 +1,63 @@
+[
+  {
+    "disease": "Late blight",
+    "pathogen": "Phytophthora infestans",
+    "type": "fungal",
+    "symptoms": [
+      "Affects leaves, stems and tubers",
+      "Water-soaked spots appear on leaves and increase in size",
+      "Spots turn purple-brown and finally black",
+      "White fungal growth develops on the underside of leaves",
+      "Infection spreads to petioles, rachis, and stems",
+      "Stem breaks at nodes causing plant to topple",
+      "Tubers show purplish-brown spots and rusty brown internal necrosis"
+    ],
+    "spread_and_survival": [
+      "Infected tubers and soil act as primary sources of infection",
+      "Disease persists through infected tubers across seasons",
+      "Airborne spread through sporangia"
+    ],
+    "epidemiology": [
+      "Relative humidity above 90%",
+      "Temperature between 10–25°C",
+      "Night temperature around 10°C",
+      "Cloudy weather before rainfall",
+      "Rainfall of at least 0.1 mm supports disease spread"
+    ],
+    "management": [
+      "Spray mancozeb or zineb at 0.2% as preventive measure",
+      "Avoid injury to tubers during harvest",
+      "Do not store infected tubers",
+      "Use resistant varieties like Kufri Naveen, Kufri Jeevan, Kufri Alankar, Kufri Khasi Garo, Kufri Moti",
+      "Destroy foliage a few days before harvest using herbicide"
+    ]
+  },
+  {
+    "disease": "Early blight",
+    "pathogen": "Alternaria solani",
+    "type": "fungal",
+    "symptoms": [
+      "Occurs in both hills and plains",
+      "Brown to black necrotic spots on leaves",
+      "Spots are angular or oval with concentric rings",
+      "Multiple spots merge and spread across the leaf",
+      "Shot holes may appear in tubers"
+    ],
+    "spread_and_survival": [
+      "Fungus survives in soil and plant debris for over 17 months",
+      "Primary infection occurs from overwintered mycelium",
+      "Secondary spread through wind, rain, and insects"
+    ],
+    "epidemiology": [
+      "Dry and warm weather with intermittent rain",
+      "Temperature between 25–30°C",
+      "More common in poorly nourished crops"
+    ],
+    "management": [
+      "Use disease-free seed tubers",
+      "Remove and destroy infected plant debris",
+      "Spray Zineb or Captan at 0.2% every 15–20 days",
+      "Use resistant variety Kufri Sindhuri"
+    ]
+  }
+]                     

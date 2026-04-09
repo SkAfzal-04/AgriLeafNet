@@ -21,7 +21,8 @@ import traceback
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-
+from pipeline import get_medicine_pipeline
+from db import init_db
 from keras.models import load_model
 from keras.preprocessing import image
 import numpy as np
@@ -49,6 +50,7 @@ TYPE_SIZE = (256, 256)
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
+init_db()
 
 CORS(app, resources={
     r"/*": {"origins": [
@@ -124,7 +126,20 @@ TYPE_CLASSES = [
     "Virus"
 ]
 
+# =========================
+# 🧠 BUILD DISEASE NAME
+# =========================
+def build_disease_name(category_label, type_label):
+    # Example:
+    # Potato___Early_blight + Fungi → early blight fungal
 
+    disease = category_label.split("___")[-1]
+    disease = disease.replace("_", " ").lower()
+
+    if type_label.lower() != "healthy":
+        disease = f"{disease} {type_label.lower()}"
+
+    return disease.strip()
 # ------------ ROUTES ------------
 
 @app.route("/", methods=["GET"])
@@ -188,14 +203,15 @@ def predict():
         type_idx = int(np.argmax(pred_type))
         type_label = TYPE_CLASSES[type_idx]
         type_conf = round(float(np.max(pred_type)) * 100, 2)
-
+        disease_name = build_disease_name(cat_label, type_label)
         return jsonify({
             "is_leaf": True,
             "category_prediction": cat_label,
             "category_confidence": cat_conf,
             "disease_type_prediction": type_label,
             "disease_type_confidence": type_conf,
-            "filename": filename
+            "filename": filename,
+            "disease_name": disease_name,
         })
 
     except Exception as e:
@@ -204,7 +220,34 @@ def predict():
             "error": "Prediction failed",
             "detail": str(e)
         }), 500
+# =========================
+# 💊 MEDICINE ENDPOINT (LLM + RAG)
+# =========================
+@app.route("/medicines", methods=["GET"])
+def get_medicines():
 
+    disease = request.args.get("disease")
+    lang = request.args.get("lang", "en")
+
+    if not disease:
+        return jsonify({"error": "disease parameter required"}), 400
+
+    try:
+        result = get_medicine_pipeline(disease,lang)
+
+        return jsonify({
+            "disease": disease,
+            "source": result["source"],
+            "medicines": result["data"],
+            "answer": result["answer"]
+        })
+
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({
+            "error": "Failed to fetch medicines",
+            "detail": str(e)
+        }), 500
 
 @app.route("/view_image/<filename>")
 def view_image(filename):
