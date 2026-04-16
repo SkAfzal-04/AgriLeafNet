@@ -1,302 +1,261 @@
-import { useState } from "react";
-import axios from "axios";
-import { Loader2, Upload } from "lucide-react";
-import { API_URL } from "../utils/constants";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 
 export default function Home() {
+  const navigate = useNavigate();
 
-  // =========================
-  // STATE
-  // =========================
-  const [file, setFile] = useState(null);
-  const [preview, setPreview] = useState(null);
-
-  const [result, setResult] = useState(null);
-
-  const [medicinesData, setMedicinesData] = useState(null);
-  const [medLoading, setMedLoading] = useState(false);
-
-  const [loading, setLoading] = useState(false);
-
-  const [lang, setLang] = useState("en");
-
-  // =========================
-  // 🌍 UI TEXT (5 LANGUAGES)
-  // =========================
-  const uiText = {
-    en: {
-      title: "AgriLeafNet 🌱",
-      subtitle: "Upload a leaf image to detect disease.",
-      analyze: "Analyze Leaf",
-      select: "Click to select image",
-      confidence: "Confidence",
-      diseaseType: "Disease Type",
-      medicines: "AI Recommended Medicines",
-      loadingMed: "Fetching medicines...",
-      noMed: "No medicines found"
+  // ✨ Animation config
+  const container = {
+    hidden: {},
+    show: {
+      transition: {
+        staggerChildren: 0.08,
+      },
     },
-
-    bn: {
-      title: "AgriLeafNet 🌱",
-      subtitle: "পাতার ছবি আপলোড করুন রোগ শনাক্ত করতে।",
-      analyze: "পাতা বিশ্লেষণ করুন",
-      select: "ছবি নির্বাচন করুন",
-      confidence: "নিশ্চয়তা",
-      diseaseType: "রোগের ধরন",
-      medicines: "AI ওষুধ",
-      loadingMed: "ওষুধ আনা হচ্ছে...",
-      noMed: "কোনো ওষুধ পাওয়া যায়নি"
-    },
-
-    hi: {
-      title: "AgriLeafNet 🌱",
-      subtitle: "पत्ती की तस्वीर अपलोड करें।",
-      analyze: "पत्ती विश्लेषण करें",
-      select: "छवि चुनें",
-      confidence: "विश्वास",
-      diseaseType: "रोग प्रकार",
-      medicines: "AI दवाएं",
-      loadingMed: "दवाएं लोड हो रही हैं...",
-      noMed: "कोई दवा नहीं मिली"
-    },
-
-    ta: {
-      title: "AgriLeafNet 🌱",
-      subtitle: "இலை படத்தை பதிவேற்றவும்.",
-      analyze: "இலையை பகுப்பாய்வு செய்யவும்",
-      select: "படத்தை தேர்வு செய்யவும்",
-      confidence: "நம்பிக்கை",
-      diseaseType: "நோய் வகை",
-      medicines: "AI மருந்துகள்",
-      loadingMed: "மருந்துகள் ஏற்றப்படுகிறது...",
-      noMed: "மருந்துகள் இல்லை"
-    },
-
-    te: {
-      title: "AgriLeafNet 🌱",
-      subtitle: "ఆకు చిత్రాన్ని అప్లోడ్ చేయండి.",
-      analyze: "ఆకు విశ్లేషించండి",
-      select: "చిత్రాన్ని ఎంచుకోండి",
-      confidence: "నమ్మకం",
-      diseaseType: "రోగ రకం",
-      medicines: "AI మందులు",
-      loadingMed: "మందులు లోడ్ అవుతున్నాయి...",
-      noMed: "మందులు లభించలేదు"
-    }
   };
 
-  // =========================
-  // FILE SELECT
-  // =========================
-  const handleFileChange = (e) => {
-    const f = e.target.files[0];
-    setFile(f);
-    setPreview(f ? URL.createObjectURL(f) : null);
-
-    setResult(null);
-    setMedicinesData(null);
+  const item = {
+    hidden: { opacity: 0, y: 40 },
+    show: { opacity: 1, y: 0 },
   };
 
-  // =========================
-  // FETCH MEDICINES (BACKGROUND)
-  // =========================
-  const fetchMedicines = async (disease) => {
-    try {
-      setMedLoading(true);
+  // 🔥 Carousel State
+  const [index, setIndex] = useState(0);
 
-      const res = await axios.get(`${API_URL}/medicines`, {
-        params: {
-          disease,
-          lang   // ✅ send language to backend
-        }
-      });
-      console.log(res)
+  const features = [
+    {
+      title: "Leaf Detection",
+      desc: "Detect whether the uploaded image is a leaf or not.",
+    },
+    {
+      title: "Disease Classification",
+      desc: "Identify early blight, late blight or healthy leaves.",
+    },
+    {
+      title: "Infection Type",
+      desc: "Detect bacteria, fungi, virus and other infections.",
+    },
+    {
+      title: "Smart Suggestions",
+      desc: "Get fertilizers and spray recommendations instantly.",
+    },
+  ];
 
-      setMedicinesData(res.data);
+  // 🔄 Auto slide
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIndex((prev) => (prev + 1) % features.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
 
-    } catch (err) {
-      console.error("Medicine error:", err);
-    } finally {
-      setMedLoading(false);
-    }
-  };
-
-  // =========================
-  // UPLOAD
-  // =========================
-  const handleUpload = async () => {
-    if (!file) return alert("Upload image first");
-
-    setLoading(true);
-    setResult(null);
-    setMedicinesData(null);
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      // 🔥 FAST RESPONSE
-      const res = await axios.post(
-        `${API_URL}/predict`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
-
-      const data = res.data;
-
-      if (!data.is_leaf) {
-        setResult({
-          is_leaf: false,
-          message: data.message,
-          imageUrl: `${API_URL}/view_image/${data.filename}`
-        });
-        return;
-      }
-
-      const disease = data.disease_name;
-
-      // ✅ SHOW RESULT FAST
-      setResult({
-        is_leaf: true,
-        category: data.category_prediction,
-        category_conf: data.category_confidence,
-        type: data.disease_type_prediction,
-        type_conf: data.disease_type_confidence,
-        disease_name: disease,
-        imageUrl: `${API_URL}/view_image/${data.filename}`
-      });
-
-      // 🚀 BACKGROUND AI CALL
-      fetchMedicines(disease);
-
-    } catch (err) {
-      console.error(err);
-      alert("Prediction failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // =========================
-  // UI
-  // =========================
   return (
-    <section className="min-h-screen flex justify-center items-center bg-green-50 p-6">
-      <div className="w-full max-w-3xl bg-white p-6 rounded-2xl shadow">
+    <div className="w-full">
 
-        {/* 🌍 LANGUAGE SELECT */}
-        <select
-          value={lang}
-          onChange={(e) => setLang(e.target.value)}
-          className="mb-4 p-2 border rounded"
-        >
-          <option value="en">English</option>
-          <option value="bn">Bengali</option>
-          <option value="hi">Hindi</option>
-          <option value="ta">Tamil</option>
-          <option value="te">Telugu</option>
-        </select>
+      {/* 🌿 HERO SECTION */}
+      <div
+        className="h-screen bg-cover bg-center flex flex-col justify-center items-center text-white text-center"
+        style={{
+          backgroundImage:
+            "url('https://images.unsplash.com/photo-1500382017468-9049fed747ef')",
+        }}
+      >
+        <div className="bg-black/50 w-full h-full flex flex-col justify-center items-center px-6">
 
-        <h1 className="text-3xl font-bold text-green-800 text-center">
-          {uiText[lang].title}
-        </h1>
+          {/* TEXT ANIMATION */}
+          <motion.div variants={container} initial="hidden" animate="show">
+            <h1 className="text-5xl md:text-6xl font-bold flex flex-wrap justify-center">
+              {"AgriLeafNet 🌱".split(" ").map((word, i) => (
+                <motion.span key={i} variants={item} className="mr-2">
+                  {word}
+                </motion.span>
+              ))}
+            </h1>
 
-        <p className="text-center text-gray-600 mt-2">
-          {uiText[lang].subtitle}
-        </p>
-
-        {/* Upload */}
-        <label className="mt-6 flex flex-col items-center border-2 border-dashed p-6 cursor-pointer">
-          <Upload />
-          <span>{uiText[lang].select}</span>
-          <input type="file" hidden onChange={handleFileChange} />
-        </label>
-
-        {/* Preview */}
-        {preview && (
-          <img src={preview} className="w-48 mx-auto mt-4 rounded" />
-        )}
-
-        {/* Button */}
-        <button
-          onClick={handleUpload}
-          disabled={loading}
-          className="w-full mt-4 bg-green-600 text-white py-2 rounded"
-        >
-          {loading ? <Loader2 className="animate-spin mx-auto" /> : uiText[lang].analyze}
-        </button>
-
-        {/* RESULT */}
-        {result && result.is_leaf && (
-          <div className="mt-6 p-4 bg-green-100 rounded">
-
-            <h2 className="text-xl font-bold text-center">
-              {result.category.replace(/_/g, " ")}
-            </h2>
-
-            <p className="text-center">
-              {uiText[lang].confidence}: {result.category_conf}%
+            <p className="mt-4 text-lg md:text-xl max-w-xl flex flex-wrap justify-center">
+              {"AI-powered potato leaf disease detection system for smarter farming decisions."
+                .split(" ")
+                .map((word, i) => (
+                  <motion.span key={i} variants={item} className="mr-1">
+                    {word}
+                  </motion.span>
+                ))}
             </p>
+          </motion.div>
 
-            <p className="text-center mt-2">
-              {uiText[lang].diseaseType}: {result.type}
-            </p>
+          {/* BUTTON */}
+          <motion.button
+            onClick={() => navigate("/detector")}
+            className="group relative mt-10 px-12 py-4 text-lg font-semibold text-white rounded-full border border-green-400 backdrop-blur-md bg-white/10 shadow-xl"
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.96 }}
+          >
+            Start Detection
+          </motion.button>
 
-            {/* 💊 MEDICINES */}
-            <div className="mt-6 bg-white p-4 rounded shadow">
+        </div>
+      </div>
 
-              <h3 className="font-bold text-green-700">
-                {uiText[lang].medicines}
-              </h3>
+      {/* 🌿 PROJECT INTRO */}
+      <motion.div
+  className="py-16 px-6 bg-gradient-to-b from-white to-green-50"
+  initial="hidden"
+  whileInView="show"
+  viewport={{ once: true }}
+>
+  <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center">
 
-              {medLoading && (
-                <p className="flex gap-2 text-gray-600">
-                  <Loader2 className="animate-spin" size={16} />
-                  {uiText[lang].loadingMed}
+    {/* LEFT CONTENT */}
+    <motion.div className="relative max-w-lg">
+
+      {/* 🌿 Background Shape */}
+      <div className="absolute -top-10 -left-10 w-72 h-72 bg-green-100 rounded-full blur-3xl opacity-40"></div>
+
+      <div className="relative">
+        <motion.h4
+          className="text-green-600 font-medium tracking-wide text-sm"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+        >
+          ABOUT PROJECT
+        </motion.h4>
+
+        <motion.h2
+          className="text-4xl font-semibold text-gray-900 mt-2 leading-snug"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          Smart Agriculture with <span className="text-green-600">AI</span>
+        </motion.h2>
+
+        <motion.p
+          className="text-gray-600 mt-4 leading-relaxed text-lg"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          AgriLeafNet helps farmers detect potato leaf diseases using deep learning.
+          It analyzes leaf images to identify disease type and provides practical
+          recommendations like fertilizers and sprays.
+        </motion.p>
+      </div>
+
+    </motion.div>
+
+    {/* RIGHT IMAGES (RESTORED ✅) */}
+    <motion.div
+      initial={{ opacity: 0, x: 60 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.9 }}
+      className="relative flex justify-center items-center"
+    >
+
+      {/* 🌿 Background Glow */}
+      <div className="absolute w-[460px] h-[460px] bg-green-100 rounded-full blur-2xl opacity-40"></div>
+
+      {/* BACK IMAGE */}
+      <motion.img
+        src="https://media.istockphoto.com/id/2229924133/photo/sugar-beet-agricultural-field.webp?a=1&b=1&s=612x612&w=0&k=20&c=_7qrE8qN17HGaU9O-hY2MEhJUBUaIEaaSvdg4xGzRZY="
+        className="w-[460px] h-[320px] object-cover rounded-2xl shadow-lg"
+        initial={{ opacity: 0, scale: 0.9 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+      />
+
+      {/* FRONT IMAGE */}
+      <motion.img
+        src="https://static.vecteezy.com/system/resources/thumbnails/036/047/553/small_2x/ai-generated-environmental-stewardship-a-tree-being-planted-to-contribute-to-climate-change-mitigation-ai-generated-photo.jpg"
+        className="w-[340px] h-[220px] object-cover rounded-2xl shadow-xl absolute top-20 -left-16 border-4 border-white rotate-[-3deg]"
+        initial={{ opacity: 0, scale: 0.8 }}
+        whileInView={{ opacity: 1, scale: 1 }}
+      />
+
+    </motion.div>
+
+  </div>
+</motion.div>
+      {/* 🌿 FEATURES CAROUSEL */}
+      <div
+        className="py-16 px-6 text-center text-white bg-cover bg-center"
+        style={{
+          backgroundImage:
+            "url('https://wallpaperaccess.com/full/1598256.jpg')",
+        }}
+      >
+        <div className="bg-green-900/70 py-16">
+
+          <h2 className="text-3xl font-bold mb-10">
+            AgriLeafNet Features
+          </h2>
+
+          <div className="relative max-w-2xl mx-auto">
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={index}
+                className="bg-white/20 backdrop-blur-md p-8 rounded-xl shadow-lg"
+                initial={{ opacity: 0, x: 120 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -120 }}
+              >
+                <div className="text-4xl font-bold text-green-300 mb-4">
+                  0{index + 1}
+                </div>
+
+                <h3 className="text-2xl font-semibold">
+                  {features[index].title}
+                </h3>
+
+                <p className="mt-3 text-gray-200">
+                  {features[index].desc}
                 </p>
-              )}
+              </motion.div>
+            </AnimatePresence>
 
-              {medicinesData && medicinesData.medicines?.length > 0 && (
-                <ul className="mt-3 space-y-2">
-                  {medicinesData.medicines.map((m, i) => (
-                    <li key={i} className="border p-2 rounded">
+            <div className="flex justify-between items-center mt-6">
 
-                      <p className="font-semibold">{m.medicine}</p>
-                      <p className="text-sm text-gray-600">{m.usage}</p>
+              <button
+                onClick={() =>
+                  setIndex((index - 1 + features.length) % features.length)
+                }
+                className="bg-green-700 px-4 py-2 rounded-lg"
+              >
+                ←
+              </button>
 
-                      {m.link && (
-                        <a
-                          href={m.link}
-                          target="_blank"
-                          className="text-blue-600 text-sm"
-                        >
-                          View Product
-                        </a>
-                      )}
+              <div className="flex gap-2">
+                {features.map((_, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setIndex(i)}
+                    className={`w-3 h-3 rounded-full cursor-pointer ${
+                      i === index ? "bg-green-400" : "bg-white/50"
+                    }`}
+                  />
+                ))}
+              </div>
 
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {medicinesData && medicinesData.medicines?.length === 0 && (
-                <p className="text-gray-500 mt-2">
-                  {uiText[lang].noMed}
-                </p>
-              )}
+              <button
+                onClick={() =>
+                  setIndex((index + 1) % features.length)
+                }
+                className="bg-green-700 px-4 py-2 rounded-lg"
+              >
+                →
+              </button>
 
             </div>
-          </div>
-        )}
 
-        {/* NOT LEAF */}
-        {result && !result.is_leaf && (
-          <div className="mt-6 text-red-600 text-center">
-            {result.message}
           </div>
-        )}
-
+        </div>
       </div>
-    </section>
+
+      {/* 🌿 FOOTER */}
+      <div className="text-center py-4 text-gray-600">
+        © 2026 AgriLeafNet
+      </div>
+
+    </div>
   );
 }

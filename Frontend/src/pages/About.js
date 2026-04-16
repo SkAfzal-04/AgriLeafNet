@@ -1,119 +1,146 @@
 import React from "react";
+import { motion } from "framer-motion";
 
 export default function About() {
+
+  // 🔥 SEQUENCE CONTROL
+  const container = {
+    hidden: {},
+    show: {
+      transition: {
+        staggerChildren: 0.6,
+      },
+    },
+  };
+
+  const section = {
+    hidden: { opacity: 0, y: 60 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.8 },
+    },
+  };
+
   return (
     <section className="min-h-screen bg-gradient-to-b from-green-50 to-green-100 py-16 px-6 flex justify-center">
-      <div className="max-w-4xl w-full bg-white shadow-xl rounded-3xl p-8 md:p-12">
 
-        {/* Header */}
-        <div className="text-center mb-10">
+      <motion.div
+        className="max-w-5xl w-full space-y-10"
+        variants={container}
+        initial="hidden"
+        animate="show"
+      >
+
+        {/* HEADER */}
+        <motion.div className="bg-white p-8 rounded-2xl shadow-xl text-center" variants={section}>
           <img
             src="/logo.png"
-            alt="AgriLeafNet Logo"
-            className="w-20 h-20 rounded-full object-cover mx-auto mb-4 shadow-md"
+            className="w-20 h-20 mx-auto mb-4 rounded-full shadow"
           />
-
-          <h1 className="text-4xl font-extrabold text-green-800">
+          <h1 className="text-4xl font-bold text-green-800">
             About AgriLeafNet
           </h1>
-        </div>
+          <p className="text-gray-600 mt-4">
+            Smart AI solution for modern agriculture
+          </p>
+        </motion.div>
 
-        {/* Main Content */}
-        <div className="text-gray-700 leading-relaxed space-y-6 text-lg">
-
-          <p>
-            <strong className="text-green-900">AgriLeafNet</strong> is an AI-powered crop disease
-            detection system designed to support farmers with instant, accurate,
-            and reliable disease diagnosis. By simply uploading a crop leaf
-            image, farmers receive predictions backed by a deep learning model
-            trained on thousands of real plant disease samples.
+        {/* INTRO */}
+        <motion.div className="bg-white p-6 rounded-xl shadow-md space-y-4" variants={section}>
+          <p className="text-lg text-gray-700">
+            AgriLeafNet is an AI-based smart farming system designed to help farmers
+            detect plant diseases quickly and easily.
           </p>
 
-          {/* Section: Model */}
-          <h2 className="text-2xl font-bold text-green-900 mt-10">🔬 AI Model Used</h2>
-          <p>
-            AgriLeafNet uses <strong>MobileNetV2</strong> — a lightweight,
-            efficient convolutional neural network pre-trained on ImageNet.
-            This makes it ideal for building a fast, mobile-friendly agricultural
-            disease classifier.
+          <p className="text-gray-600">
+            Instead of depending on guesswork or waiting for experts, farmers can
+            simply upload an image of a leaf and instantly know the condition of
+            their crop.
           </p>
 
-          <p>
-            The model architecture includes:
+          <p className="text-gray-600">
+            The system not only detects the disease but also provides useful
+            suggestions such as fertilizers and sprays, helping farmers take the
+            right action at the right time.
+          </p>
+        </motion.div>
+
+        {/* HOW IT WORKS */}
+        <motion.div className="bg-white p-6 rounded-xl shadow-md" variants={section}>
+          <h2 className="text-2xl font-bold text-green-800 mb-4">
+            🌿 How It Works
+          </h2>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            {[
+              "Upload a clear image of the plant leaf",
+              "System verifies if it is a leaf or not",
+              "AI model analyzes the image",
+              "Detects disease category and type",
+              "Displays confidence level of prediction",
+              "Provides treatment suggestions",
+            ].map((item, i) => (
+              <div key={i} className="bg-green-50 p-4 rounded-lg shadow-sm hover:scale-105 transition">
+                ✔ {item}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* FEATURES */}
+        <motion.div className="bg-white p-6 rounded-xl shadow-md" variants={section}>
+          <h2 className="text-2xl font-bold text-green-800 mb-4">
+            🚀 Key Features
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-4">
+            {[
+              "Fast and real-time disease detection",
+              "Simple and user-friendly interface",
+              "Accurate AI-based predictions",
+              "Smart fertilizer and spray suggestions",
+              "Works on both mobile and desktop",
+              "Supports multiple disease categories",
+            ].map((f, i) => (
+              <div key={i} className="bg-green-100 p-4 rounded-xl text-center shadow hover:scale-105 transition">
+                {f}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* WHY IMPORTANT */}
+        <motion.div className="bg-white p-6 rounded-xl shadow-md space-y-4" variants={section}>
+          <h2 className="text-2xl font-bold text-green-800 mb-2">
+            🌾 Why This Project is Important
+          </h2>
+
+          <p className="text-gray-700">
+            Farmers often face difficulty in identifying plant diseases at an early
+            stage. This delay can lead to serious crop damage and financial loss.
           </p>
 
-          <ul className="list-disc ml-6 space-y-2">
-            <li>MobileNetV2 as base (pretrained on ImageNet)</li>
-            <li>Global Average Pooling for feature extraction</li>
-            <li>Batch Normalization for stability</li>
-            <li>Dense layers with ReLU activation</li>
-            <li>Dropout layers to reduce overfitting</li>
-            <li>Final Softmax layer for multi-class disease prediction</li>
-          </ul>
-
-          <pre className="bg-green-900 text-green-100 p-4 rounded-lg overflow-x-auto text-sm mt-4">
-MobileNetV2 → GAP → BatchNorm → Dense → Dropout → Dense(softmax)
-          </pre>
-
-          {/* Section: Dataset */}
-          <h2 className="text-2xl font-bold text-green-900 mt-10">🌱 Dataset Used</h2>
-          <p>
-            The model is trained using a combination of curated agricultural datasets
-            containing <strong>healthy and diseased crop leaves</strong>.  
-            Each image is preprocessed, augmented, and resized to 224×224 before training.
+          <p className="text-gray-600">
+            AgriLeafNet helps solve this problem by providing quick and reliable
+            results, allowing farmers to take preventive actions before the disease spreads.
           </p>
 
-          <p>
-            Data preprocessing includes:
+          <p className="text-gray-600">
+            This leads to better crop health, increased yield, and improved farming outcomes.
           </p>
+        </motion.div>
 
-          <ul className="list-disc ml-6 space-y-2">
-            <li>Normalization (rescaling pixel values)</li>
-            <li>Augmentation (rotation, zoom, flip, brightness shift)</li>
-            <li>Dataset splitting into Train, Validation, and Test sets</li>
-          </ul>
-
-          {/* Section: Training Pipeline */}
-          <h2 className="text-2xl font-bold text-green-900 mt-10">⚙️ Training Pipeline</h2>
+        {/* GOAL */}
+        <motion.div className="bg-green-700 text-white p-6 rounded-xl shadow-md text-center" variants={section}>
+          <h2 className="text-2xl font-bold mb-3">🎯 Goal of AgriLeafNet</h2>
           <p>
-            AgriLeafNet is trained in two phases for maximum accuracy:
+            Our goal is to make agriculture smarter using AI technology, reduce crop loss,
+            and help farmers make better decisions for higher productivity and sustainable farming.
           </p>
+        </motion.div>
 
-          <h3 className="font-semibold text-green-800">1️⃣ Stage 1 – Training Top Layers Only</h3>
-          <p>
-            The MobileNetV2 base is frozen and only the custom layers are trained for
-            <strong>12 epochs</strong>.
-          </p>
-
-          <pre className="bg-green-900 text-green-100 p-4 rounded-lg overflow-x-auto text-sm">
-history = model.fit(train_data, validation_data=val_data, epochs=12)
-          </pre>
-
-          <h3 className="font-semibold text-green-800 mt-4">2️⃣ Stage 2 – Fine-Tuning Entire Model</h3>
-          <p>
-            Deeper MobileNet layers are unfrozen and the entire network is fine-tuned
-            for <strong>25 additional epochs</strong> to boost accuracy.
-          </p>
-
-          <pre className="bg-green-900 text-green-100 p-4 rounded-lg overflow-x-auto text-sm">
-history_ft = model.fit(train_data, validation_data=val_data, epochs=25)
-          </pre>
-
-          <p>
-            The model is optimized using <strong>Adam</strong> with a learning rate of
-            <strong> 0.0008</strong> and trained using <strong>categorical crossentropy</strong>
-            loss for multi-class classification.
-          </p>
-
-          {/* Final Summary */}
-          <h2 className="text-2xl font-bold text-green-900 mt-10">🌾 Goal of AgriLeafNet</h2>
-          <p>
-            AgriLeafNet aims to support farmers globally by enabling quick,
-            AI-powered plant disease detection—reducing crop loss, improving yields,
-            and promoting sustainable agriculture.
-          </p>
-        </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
